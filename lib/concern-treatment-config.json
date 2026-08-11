@@ -1,0 +1,52 @@
+{
+  "concerns": [
+    { "id": "wrinkle", "label": "Wrinkles", "treatments": [
+      { "id": "retinoid", "label": "Retinoid" },
+      { "id": "sleep", "label": "Sleep / rest" },
+      { "id": "sunscreen", "label": "Sunscreen consistency" }
+    ]},
+    { "id": "acne", "label": "Acne", "treatments": [
+      { "id": "topical", "label": "Topical treatment" },
+      { "id": "diet", "label": "Dietary adjustment" },
+      { "id": "extraction", "label": "Professional extraction" }
+    ]},
+    { "id": "oiliness", "label": "Oiliness", "treatments": [
+      { "id": "oil_control_cleanser", "label": "Oil-control cleanser" },
+      { "id": "niacinamide", "label": "Niacinamide serum" }
+    ]},
+    { "id": "eye_bag", "label": "Eye bags", "treatments": [
+      { "id": "sleep", "label": "Sleep / rest" },
+      { "id": "cold_compress", "label": "Cold compress routine" },
+      { "id": "caffeine_eye_cream", "label": "Caffeine eye cream" }
+    ]},
+    { "id": "dark_circle_v2", "label": "Dark circles", "treatments": [
+      { "id": "sleep", "label": "Sleep / rest" },
+      { "id": "vitamin_k_retinol_eye_cream", "label": "Vitamin K / retinol eye cream" }
+    ]},
+    { "id": "age_spot", "label": "Age spots", "treatments": [
+      { "id": "vitamin_c_serum", "label": "Vitamin C serum" },
+      { "id": "sunscreen", "label": "Sunscreen" },
+      { "id": "laser_peel", "label": "Professional laser / peel" }
+    ]},
+    { "id": "pore", "label": "Pores", "treatments": [
+      { "id": "salicylic_acid", "label": "Salicylic acid" },
+      { "id": "clay_mask", "label": "Clay mask routine" }
+    ]},
+    { "id": "texture", "label": "Texture", "treatments": [
+      { "id": "exfoliation", "label": "Exfoliation routine" },
+      { "id": "microdermabrasion", "label": "Professional microdermabrasion" }
+    ]},
+    { "id": "redness", "label": "Redness", "treatments": [
+      { "id": "anti_inflammatory", "label": "Anti-inflammatory skincare" },
+      { "id": "avoid_triggers", "label": "Avoid triggers (heat / alcohol)" },
+      { "id": "rosacea_treatment", "label": "Rosacea treatment" }
+    ]},
+    { "id": "radiance", "label": "Radiance", "treatments": [
+      { "id": "hydration_routine", "label": "Hydration routine" },
+      { "id": "sleep", "label": "Sleep / rest" },
+      { "id": "vitamin_c", "label": "Vitamin C" }
+    ]}
+  ],
+  "simulation_intensity_steps": [0.3, 0.7],
+  "analysis_tier": "SD"
+}
