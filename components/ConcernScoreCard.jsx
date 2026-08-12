@@ -1,8 +1,13 @@
-export default function ConcernScoreCard({ label, uiScore, maskImageUrl }) {
+export default function ConcernScoreCard({ label, uiScore, originalImageUrl, maskImageUrl }) {
   return (
     <div style={card}>
-      {maskImageUrl && (
-        <img src={maskImageUrl} alt={`${label} detection mask`} style={maskImg} />
+      {originalImageUrl && (
+        <div style={imageStack}>
+          <img src={originalImageUrl} alt="" style={layer} />
+          {maskImageUrl && (
+            <img src={maskImageUrl} alt={`${label} detection mask`} style={layer} />
+          )}
+        </div>
       )}
       <div style={scoreRow}>
         <span style={score}>{uiScore}</span>
@@ -21,13 +26,22 @@ const card = {
   textAlign: "center",
 };
 
-const maskImg = {
+const imageStack = {
+  position: "relative",
   width: "100%",
   aspectRatio: "1",
-  objectFit: "cover",
   borderRadius: 10,
   marginBottom: 10,
+  overflow: "hidden",
   background: "var(--color-bg)",
+};
+
+const layer = {
+  position: "absolute",
+  inset: 0,
+  width: "100%",
+  height: "100%",
+  objectFit: "cover",
 };
 
 const scoreRow = {

@@ -24,6 +24,7 @@ export default function NewVisitPage() {
   const [captureError, setCaptureError] = useState(null);
   const [capturedBlob, setCapturedBlob] = useState(null);
   const [results, setResults] = useState(null);
+  const [originalImageUrl, setOriginalImageUrl] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [statusIndex, setStatusIndex] = useState(0);
 
@@ -88,6 +89,7 @@ export default function NewVisitPage() {
 
       const sorted = [...data.results].sort((a, b) => a.uiScore - b.uiScore);
       setResults(sorted);
+      setOriginalImageUrl(data.originalImageUrl);
       setStep("results");
     } catch (err) {
       setErrorMessage(err.message || "Something went wrong. Please try again.");
@@ -141,6 +143,7 @@ export default function NewVisitPage() {
                 key={r.concern}
                 label={CONCERN_LABELS[r.concern] || r.concern}
                 uiScore={r.uiScore}
+                originalImageUrl={originalImageUrl}
                 maskImageUrl={r.maskImageUrl}
               />
             ))}
