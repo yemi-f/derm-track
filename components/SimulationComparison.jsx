@@ -9,9 +9,9 @@ export default function SimulationComparison({ originalImageUrl, simulations, lo
   const [expanded, setExpanded] = useState(false);
 
   const columns = [
-    { key: "original", label: "Original", url: originalImageUrl },
-    { key: "0.3", label: "+0.3", url: simulations["0.3"] },
-    { key: "0.7", label: "+0.7", url: simulations["0.7"] },
+    { key: "original", label: "Start", url: originalImageUrl },
+    { key: "0.3", label: "Mid", url: simulations["0.3"] },
+    { key: "0.7", label: "End", url: simulations["0.7"] },
   ];
   const availableColumns = columns.filter((col) => col.url);
 
