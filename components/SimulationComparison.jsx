@@ -1,3 +1,7 @@
+"use client";
+
+import ExpandableImage from "./ExpandableImage";
+
 const clinicName = process.env.NEXT_PUBLIC_CLINIC_NAME || "Your Clinic";
 
 export default function SimulationComparison({ originalImageUrl, simulations, loadingIntensity }) {
@@ -14,7 +18,7 @@ export default function SimulationComparison({ originalImageUrl, simulations, lo
           <div key={col.key} style={cell}>
             <div style={imageBox}>
               {col.url ? (
-                <img src={col.url} alt={col.label} style={img} />
+                <ExpandableImage src={col.url} alt={col.label} style={img} />
               ) : loadingIntensity === col.key ? (
                 <span style={loadingText}>Simulating…</span>
               ) : (
