@@ -2,17 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSignedUrl } from "@/lib/storage";
-import ConcernScoreCard from "@/components/ConcernScoreCard";
-import SimulationComparison from "@/components/SimulationComparison";
 import ExpandableImage from "@/components/ExpandableImage";
-import concernConfig from "@/lib/concern-treatment-config.json";
-
-const CONCERN_LABELS = Object.fromEntries(
-  concernConfig.concerns.map((c) => [c.id, c.label])
-);
-const TREATMENTS_BY_CONCERN = Object.fromEntries(
-  concernConfig.concerns.map((c) => [c.id, c.treatments])
-);
+import VisitConcernExplorer from "@/components/VisitConcernExplorer";
 
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -81,19 +72,21 @@ export default async function VisitDetailPage({ params }) {
     visit.treatment_selections || [],
     (t) => t.concern_key
   );
+  const initialTreatmentSelections = Object.fromEntries(
+    [...latestTreatmentByConcern.values()].map((t) => [t.concern_key, t.treatment_id])
+  );
 
   const latestSimByConcernIntensity = latestByKey(
     visit.simulations || [],
     (s) => `${s.concern_key}:${s.intensity}`
   );
-
-  const simulationsByConcern = {};
+  const initialSimulations = {};
   for (const sim of latestSimByConcernIntensity.values()) {
-    const urls = simulationsByConcern[sim.concern_key] || {};
+    const urls = initialSimulations[sim.concern_key] || {};
     urls[String(sim.intensity)] = await getSignedUrl(sim.simulated_image_path, {
       expiresInSeconds: 3600,
     });
-    simulationsByConcern[sim.concern_key] = urls;
+    initialSimulations[sim.concern_key] = urls;
   }
 
   return (
@@ -107,41 +100,14 @@ export default async function VisitDetailPage({ params }) {
 
       <ExpandableImage src={originalImageUrl} style={heroImage} />
 
-      <h2 style={sectionTitle}>Concern Scores</h2>
-      <div style={grid}>
-        {scores.map((s) => (
-          <ConcernScoreCard
-            key={s.concern}
-            label={CONCERN_LABELS[s.concern] || s.concern}
-            uiScore={s.uiScore}
-            originalImageUrl={originalImageUrl}
-            maskImageUrl={s.maskImageUrl}
-          />
-        ))}
-      </div>
-
-      {[...latestTreatmentByConcern.values()].map((treatment) => {
-        const simulations = simulationsByConcern[treatment.concern_key];
-        if (!simulations) return null;
-
-        const treatmentLabel =
-          TREATMENTS_BY_CONCERN[treatment.concern_key]?.find(
-            (t) => t.id === treatment.treatment_id
-          )?.label || treatment.treatment_id;
-
-        return (
-          <div key={treatment.concern_key} style={panel}>
-            <h3 style={{ marginTop: 0, fontSize: 15 }}>
-              {CONCERN_LABELS[treatment.concern_key] || treatment.concern_key} — {treatmentLabel}
-            </h3>
-            <SimulationComparison
-              originalImageUrl={originalImageUrl}
-              simulations={simulations}
-              loadingIntensity={null}
-            />
-          </div>
-        );
-      })}
+      <VisitConcernExplorer
+        visitId={visit.id}
+        imagePath={visit.original_image_path}
+        originalImageUrl={originalImageUrl}
+        scores={scores}
+        initialTreatmentSelections={initialTreatmentSelections}
+        initialSimulations={initialSimulations}
+      />
     </main>
   );
 }
@@ -160,24 +126,4 @@ const heroImage = {
   objectFit: "cover",
   borderRadius: "var(--radius)",
   marginBottom: 24,
-};
-
-const sectionTitle = {
-  fontSize: 16,
-  marginBottom: 12,
-};
-
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-  gap: 16,
-  marginBottom: 24,
-};
-
-const panel = {
-  marginTop: 16,
-  padding: 20,
-  background: "var(--color-surface)",
-  borderRadius: "var(--radius)",
-  boxShadow: "var(--shadow-soft)",
 };
