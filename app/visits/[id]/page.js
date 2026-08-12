@@ -90,7 +90,7 @@ export default async function VisitDetailPage({ params }) {
   }
 
   return (
-    <main style={{ maxWidth: 640, margin: "40px auto", padding: "0 24px" }}>
+    <main style={{ maxWidth: 1100, margin: "40px auto", padding: "0 24px" }}>
       <Link href="/visits" style={backLink}>
         ← Back to visits
       </Link>
@@ -98,12 +98,11 @@ export default async function VisitDetailPage({ params }) {
       <h1 style={{ marginBottom: 4 }}>{formatDate(visit.created_at)}</h1>
       {visit.notes && <p style={{ color: "var(--color-text-muted)" }}>{visit.notes}</p>}
 
-      <ExpandableImage src={originalImageUrl} style={heroImage} />
-
       <VisitConcernExplorer
         visitId={visit.id}
         imagePath={visit.original_image_path}
         originalImageUrl={originalImageUrl}
+        heroImage={<ExpandableImage src={originalImageUrl} style={heroImageStyle} />}
         scores={scores}
         initialTreatmentSelections={initialTreatmentSelections}
         initialSimulations={initialSimulations}
@@ -120,7 +119,7 @@ const backLink = {
   textDecoration: "none",
 };
 
-const heroImage = {
+const heroImageStyle = {
   width: "100%",
   maxHeight: 360,
   objectFit: "cover",

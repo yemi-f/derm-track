@@ -21,6 +21,7 @@ export default function VisitConcernExplorer({
   visitId,
   imagePath,
   originalImageUrl,
+  heroImage,
   scores,
   initialTreatmentSelections = {},
   initialSimulations = {},
@@ -88,84 +89,103 @@ export default function VisitConcernExplorer({
   }
 
   return (
-    <div>
-      <h2 style={{ fontSize: 18 }}>Concern Scores</h2>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-          gap: 16,
-        }}
-      >
-        {scores.map((s) => (
-          <ConcernScoreCard
-            key={s.concern}
-            label={CONCERN_LABELS[s.concern] || s.concern}
-            uiScore={s.uiScore}
-            originalImageUrl={originalImageUrl}
-            maskImageUrl={s.maskImageUrl}
-            selected={selectedConcern === s.concern}
-            onClick={() => handleSelectConcern(s.concern)}
-          />
-        ))}
+    <div className="visit-explorer-layout">
+      <div>
+        {heroImage}
+        <h2 style={{ fontSize: 18 }}>Concern Scores</h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+            gap: 16,
+          }}
+        >
+          {scores.map((s) => (
+            <ConcernScoreCard
+              key={s.concern}
+              label={CONCERN_LABELS[s.concern] || s.concern}
+              uiScore={s.uiScore}
+              originalImageUrl={originalImageUrl}
+              maskImageUrl={s.maskImageUrl}
+              selected={selectedConcern === s.concern}
+              onClick={() => handleSelectConcern(s.concern)}
+            />
+          ))}
+        </div>
       </div>
 
-      {selectedConcern && (
-        <div style={panel}>
-          <h3 style={{ fontSize: 16, marginTop: 0 }}>
-            {CONCERN_LABELS[selectedConcern] || selectedConcern}
-          </h3>
+      <div className="visit-explorer-panel">
+        {selectedConcern ? (
+          <div style={panel}>
+            <h3 style={{ fontSize: 16, marginTop: 0 }}>
+              {CONCERN_LABELS[selectedConcern] || selectedConcern}
+            </h3>
 
-          {panelError && <p style={{ color: "#a13a34", fontSize: 13 }}>{panelError}</p>}
+            {panelError && <p style={{ color: "#a13a34", fontSize: 13 }}>{panelError}</p>}
 
-          <TreatmentSelector
-            treatments={TREATMENTS_BY_CONCERN[selectedConcern] || []}
-            selectedTreatmentId={treatmentSelections[selectedConcern]}
-            onSelect={(treatmentId) => handleSelectTreatment(selectedConcern, treatmentId)}
-          />
+            <TreatmentSelector
+              treatments={TREATMENTS_BY_CONCERN[selectedConcern] || []}
+              selectedTreatmentId={treatmentSelections[selectedConcern]}
+              onSelect={(treatmentId) => handleSelectTreatment(selectedConcern, treatmentId)}
+            />
 
-          {treatmentSelections[selectedConcern] && (
-            <>
-              <button
-                style={{ ...primaryButton, marginTop: 16 }}
-                onClick={() => handleSimulate(selectedConcern)}
-                disabled={simLoading?.concern === selectedConcern}
-              >
-                {simLoading?.concern === selectedConcern
-                  ? simLoading.intensity === "0.3"
-                    ? "Calling Skin Simulation — subtle…"
-                    : "Calling Skin Simulation — dramatic…"
-                  : simulationsByConcern[selectedConcern]
-                  ? "Re-run Projection"
-                  : "See Projection"}
-              </button>
+            {treatmentSelections[selectedConcern] && (
+              <>
+                <button
+                  style={{ ...primaryButton, marginTop: 16 }}
+                  onClick={() => handleSimulate(selectedConcern)}
+                  disabled={simLoading?.concern === selectedConcern}
+                >
+                  {simLoading?.concern === selectedConcern
+                    ? simLoading.intensity === "0.3"
+                      ? "Calling Skin Simulation — subtle…"
+                      : "Calling Skin Simulation — dramatic…"
+                    : simulationsByConcern[selectedConcern]
+                    ? "Re-run Projection"
+                    : "See Projection"}
+                </button>
 
-              {(simulationsByConcern[selectedConcern] ||
-                simLoading?.concern === selectedConcern) && (
-                <div style={{ marginTop: 16 }}>
-                  <SimulationComparison
-                    originalImageUrl={originalImageUrl}
-                    simulations={simulationsByConcern[selectedConcern] || {}}
-                    loadingIntensity={
-                      simLoading?.concern === selectedConcern ? simLoading.intensity : null
-                    }
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      )}
+                {(simulationsByConcern[selectedConcern] ||
+                  simLoading?.concern === selectedConcern) && (
+                  <div style={{ marginTop: 16 }}>
+                    <SimulationComparison
+                      originalImageUrl={originalImageUrl}
+                      simulations={simulationsByConcern[selectedConcern] || {}}
+                      loadingIntensity={
+                        simLoading?.concern === selectedConcern ? simLoading.intensity : null
+                      }
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ) : (
+          <div style={emptyPanel}>
+            <p style={{ margin: 0, color: "var(--color-text-muted)", fontSize: 14 }}>
+              Select a concern to see provider recommendations.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
 const panel = {
-  marginTop: 20,
   padding: 20,
   background: "var(--color-surface)",
   borderRadius: "var(--radius)",
   boxShadow: "var(--shadow-soft)",
+};
+
+const emptyPanel = {
+  ...panel,
+  minHeight: 160,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center",
 };
 
 const primaryButton = {

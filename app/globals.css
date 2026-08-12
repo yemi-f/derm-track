@@ -41,3 +41,25 @@ button {
 input {
   font-family: inherit;
 }
+
+.visit-explorer-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.visit-explorer-panel {
+  position: sticky;
+  top: 24px;
+}
+
+@media (max-width: 900px) {
+  .visit-explorer-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .visit-explorer-panel {
+    position: static;
+  }
+}
