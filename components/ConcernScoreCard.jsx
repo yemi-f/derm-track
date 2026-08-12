@@ -66,7 +66,9 @@ const card = {
   boxShadow: "var(--shadow-soft)",
   padding: 16,
   textAlign: "center",
-  border: "2px solid transparent",
+  borderWidth: 2,
+  borderStyle: "solid",
+  borderColor: "transparent",
 };
 
 const cardSelected = {
