@@ -13,16 +13,12 @@ import {
 
 export default function VisitTrendChart({ data, series }) {
   return (
-    <ResponsiveContainer width="100%" height={320}>
-      <LineChart data={data} margin={{ top: 8, right: 16, bottom: 8, left: -16 }}>
-        <CartesianGrid stroke="var(--color-border)" strokeDasharray="3 3" />
-        <XAxis dataKey="date" tick={{ fontSize: 12, fill: "var(--color-text-muted)" }} />
-        <YAxis
-          domain={[0, 100]}
-          tick={{ fontSize: 12, fill: "var(--color-text-muted)" }}
-          width={36}
-        />
-        <Tooltip content={<ImagePreviewTooltip series={series} />} />
+    <ResponsiveContainer width="100%" aspect={1.618}>
+      <LineChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
+        <XAxis dataKey="date" stroke="var(--color-text-muted)" />
+        <YAxis width="auto" domain={[0, 100]} stroke="var(--color-text-muted)" />
+        <Tooltip cursor={{ stroke: "var(--color-border)" }} content={<ImagePreviewTooltip />} />
         <Legend wrapperStyle={{ fontSize: 13 }} />
         {series.map((s) => (
           <Line
@@ -31,8 +27,8 @@ export default function VisitTrendChart({ data, series }) {
             dataKey={s.id}
             name={s.label}
             stroke={s.color}
-            strokeWidth={2}
-            dot={{ r: 3 }}
+            dot={{ fill: "var(--color-surface)" }}
+            activeDot={{ r: 8, stroke: "var(--color-surface)" }}
             connectNulls
           />
         ))}
@@ -43,7 +39,7 @@ export default function VisitTrendChart({ data, series }) {
 
 // Each chart row represents one visit — the photo is shared across every concern's
 // point at that date, so it's shown once, with every active line's score listed below.
-function ImagePreviewTooltip({ active, payload, label, series }) {
+function ImagePreviewTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
   const point = payload[0].payload;
 
