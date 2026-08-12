@@ -1,24 +1,31 @@
 "use client";
 
-import ExpandableImage from "./ExpandableImage";
+import { useState } from "react";
+import Lightbox from "./Lightbox";
 
 const clinicName = process.env.NEXT_PUBLIC_CLINIC_NAME || "Your Clinic";
 
 export default function SimulationComparison({ originalImageUrl, simulations, loadingIntensity }) {
+  const [expanded, setExpanded] = useState(false);
+
   const columns = [
     { key: "original", label: "Original", url: originalImageUrl },
     { key: "0.3", label: "+0.3", url: simulations["0.3"] },
     { key: "0.7", label: "+0.7", url: simulations["0.7"] },
   ];
+  const availableColumns = columns.filter((col) => col.url);
 
   return (
     <div>
       <div style={grid}>
         {columns.map((col) => (
           <div key={col.key} style={cell}>
-            <div style={imageBox}>
+            <div
+              style={{ ...imageBox, cursor: col.url ? "zoom-in" : "default" }}
+              onClick={col.url ? () => setExpanded(true) : undefined}
+            >
               {col.url ? (
-                <ExpandableImage src={col.url} alt={col.label} style={img} />
+                <img src={col.url} alt={col.label} style={img} />
               ) : loadingIntensity === col.key ? (
                 <span style={loadingText}>Simulating…</span>
               ) : (
@@ -32,6 +39,15 @@ export default function SimulationComparison({ originalImageUrl, simulations, lo
       <p style={disclaimer}>
         Simulated preview, not a guarantee. Check in with {clinicName} on your progress.
       </p>
+
+      <Lightbox open={expanded} onClose={() => setExpanded(false)}>
+        {availableColumns.map((col) => (
+          <div key={col.key} style={lightboxCell}>
+            <img src={col.url} alt={col.label} style={lightboxImg} />
+            <div style={lightboxLabel}>{col.label}</div>
+          </div>
+        ))}
+      </Lightbox>
     </div>
   );
 }
@@ -79,4 +95,24 @@ const disclaimer = {
   fontSize: 12,
   color: "var(--color-text-muted)",
   textAlign: "center",
+};
+
+const lightboxCell = {
+  flex: 1,
+  minWidth: 0,
+  textAlign: "center",
+};
+
+const lightboxImg = {
+  width: "100%",
+  maxHeight: "80vh",
+  objectFit: "contain",
+  borderRadius: 12,
+};
+
+const lightboxLabel = {
+  marginTop: 8,
+  fontSize: 14,
+  fontWeight: 600,
+  color: "#fff",
 };
