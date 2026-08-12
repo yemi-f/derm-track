@@ -1,6 +1,18 @@
-export default function ConcernScoreCard({ label, uiScore, originalImageUrl, maskImageUrl }) {
+export default function ConcernScoreCard({
+  label,
+  uiScore,
+  originalImageUrl,
+  maskImageUrl,
+  onClick,
+  selected,
+}) {
   return (
-    <div style={card}>
+    <div
+      style={selected ? { ...card, ...cardSelected } : card}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
       {originalImageUrl && (
         <div style={imageStack}>
           <img src={originalImageUrl} alt="" style={layer} />
@@ -24,6 +36,12 @@ const card = {
   boxShadow: "var(--shadow-soft)",
   padding: 16,
   textAlign: "center",
+  cursor: "pointer",
+  border: "2px solid transparent",
+};
+
+const cardSelected = {
+  borderColor: "var(--color-primary)",
 };
 
 const imageStack = {
