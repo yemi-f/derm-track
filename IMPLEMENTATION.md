@@ -26,7 +26,7 @@ Framing: **"[Clinic Name] gave you this app to track your treatment journey."** 
 |---|---|---|
 | Framework | **Next.js 14+, App Router, JavaScript (no TS)** | API routes = built-in backend, file routing = fast to scaffold |
 | Auth + DB + Storage | **Supabase** | Email + password *and* passwordless magic-link auth, Postgres, file storage, all in one client |
-| Charting | **Recharts** | Simple line graph for score trends, works cleanly in React |
+| Charting | **Chart.js**, via **react-chartjs-2** | Canvas-based line graph for score trends; switched from Recharts after its tooltips proved unreliable — custom HTML tooltips (needed for the visit-photo preview) are driven via Chart.js's documented `external` tooltip hook |
 | Image cropping | **react-easy-crop** | Lightweight drag/zoom crop UI, avoids repeated upload failures on dimension errors |
 | Styling | Plain CSS / CSS modules with a small design-token file | Keeps things simple and consistent without pulling in a UI framework |
 | Deployment | **Vercel** | Zero-config Next.js deploy, works with Supabase out of the box |
@@ -245,39 +245,32 @@ Flow order: select file → check min dimensions (hard reject if too small) → 
 ### 8.2 `visits` — history (home screen)
 
 - **List view**: reverse-chronological cards, one per visit, showing date + thumbnail + a one-line summary (e.g. "3 concerns tracked")
-- **Line graph** (Recharts `LineChart`): X-axis = visit date, Y-axis = score (0–100), one line per concern (use a legend, cap at the concerns that have 2+ data points so the graph isn't cluttered on a first visit). Use the palette's `--color-primary` and a few complementary muted tones for multiple lines, not saturated defaults.
-- **Hover tooltip shows the visit's photo**, not just the score. Each point on the chart corresponds to one visit, so pass `original_image_url` through as part of that data point and render it in a custom Recharts `<Tooltip content={...}>`:
+- **Line graph** (react-chartjs-2 `<Line>`, wrapping Chart.js): X-axis = visit date, Y-axis = score (0–100, set via `scales.y.min`/`max`), one dataset per concern (built-in Chart.js legend, cap at the concerns that have 2+ data points so the graph isn't cluttered on a first visit). Use the palette's `--color-primary` and a few complementary muted tones for multiple lines, not saturated defaults — **as literal hex values, not `var(--color-*)` strings**: Chart.js draws to `<canvas>`, and canvas 2D color properties don't reliably resolve CSS custom properties the way SVG/DOM styling does, so the hex equivalents of the design tokens are hardcoded where they feed the chart (line/grid/axis colors).
+- **Hover tooltip shows the visit's photo**, not just the score. Chart.js's built-in canvas tooltip can't render arbitrary HTML (e.g. an `<img>`), so it's disabled (`plugins.tooltip.enabled: false`) in favor of Chart.js's documented `external` tooltip hook, which drives a plain absolutely-positioned `<div>` rendered as a sibling of the chart canvas:
 
 ```jsx
 // components/VisitTrendChart.jsx (relevant part)
-function ImagePreviewTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  const point = payload[0].payload; // { date, score, imageUrl, concernLabel }
-  return (
-    <div style={{
-      background: "var(--color-surface)",
-      border: "1px solid var(--color-border)",
-      borderRadius: "var(--radius)",
-      boxShadow: "var(--shadow-soft)",
-      padding: 12,
-      display: "flex",
-      gap: 10,
-      alignItems: "center",
-    }}>
-      <img
-        src={point.imageUrl}
-        alt={`Visit on ${label}`}
-        style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 10 }}
-      />
-      <div>
-        <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{label}</div>
-        <div style={{ fontWeight: 600 }}>{point.concernLabel}: {point.score}</div>
-      </div>
-    </div>
-  );
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip } from "chart.js";
+import { Line } from "react-chartjs-2";
+
+// Tooltip must be explicitly registered — react-chartjs-2's <Line> only
+// auto-registers LineController, not the tooltip plugin.
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip);
+
+function externalTooltipHandler({ chart, tooltip }) {
+  const el = tooltipRef.current; // useRef(null), rendered as <div ref={tooltipRef} /> beside <Line>
+  if (tooltip.opacity === 0) { el.style.opacity = 0; return; }
+
+  const point = data[tooltip.dataPoints[0].dataIndex]; // { date, imageUrl, [concernId]: score, ... }
+  el.replaceChildren(); // rebuild: thumbnail <img src={point.imageUrl}>, date, one row per
+                         // tooltip.dataPoints entry ("{dp.dataset.label}: {dp.formattedValue}/100")
+
+  el.style.opacity = 1;
+  el.style.left = `${chart.canvas.offsetLeft + tooltip.caretX}px`;
+  el.style.top = `${chart.canvas.offsetTop + tooltip.caretY}px`;
 }
 
-// Usage: <Tooltip content={<ImagePreviewTooltip />} />
+// Usage: <Line data={chartData} options={{ plugins: { tooltip: { enabled: false, external: externalTooltipHandler } } }} />
 ```
 
 Each chart data point needs an `imageUrl` — but since the bucket is private, this isn't a stored value, it's a **signed URL generated server-side at request time** from the visit's `original_image_path`. Build the chart data server-side: join `visits` and `concern_scores` on `visit_id`, generate one signed URL per visit (reuse it across that visit's data points rather than re-signing per point), and attach it to each point before sending the chart data to the client component.
@@ -549,7 +542,7 @@ Already scoped to the 10 simulation-eligible concerns. Drop this in as `lib/conc
 
 ## 11. Build order
 
-1. **Scaffold**: `create-next-app` (JS, App Router, no TS), install `@supabase/supabase-js`, `@supabase/ssr`, `recharts`, `react-easy-crop`
+1. **Scaffold**: `create-next-app` (JS, App Router, no TS), install `@supabase/supabase-js`, `@supabase/ssr`, `chart.js`, `react-chartjs-2`, `react-easy-crop`
 2. **Supabase project**: create tables (§5), enable RLS, create a **private** `visit-images` storage bucket with `allowedMimeTypes` restricted to `['image/jpeg', 'image/png']` and `fileSizeLimit` set to 10MB (do not make it public — see §4), enable email/password auth and email OTP (magic link) auth
 3. **Auth**: login page with email + password (sign-in and sign-up) plus a magic-link alternative, callback route, middleware guard — confirm you can sign in both ways and land on a protected page
 4. **Capture → crop/validate → Analysis loop**: YouCam JS Camera Kit capture (or upload fallback) → dimension check → crop UI → resize-down → upload to storage → call `/api/youcam/analyze` (confirmed working via Playground first) → render scores. This is the spine of the whole demo — get it working end-to-end before moving on.
@@ -557,7 +550,7 @@ Already scoped to the 10 simulation-eligible concerns. Drop this in as `lib/conc
 6. **Simulation**: `concernKeyMap.js` is fully confirmed (§9.3) — wire `/api/youcam/simulate` directly, render 3-way comparison
 7. **Save visit + visit list**: write to `visits`, show reverse-chron list on `/visits`
 8. **Visit detail page** (`visits/[id]`): full record of a single visit — photo, scores, treatments selected, simulation results
-9. **Line graph**: Recharts trend view with hover image preview — needs at least 2 visits to look meaningful, so seed a second visit for demo purposes if needed
+9. **Line graph**: Chart.js (react-chartjs-2) trend view with hover image preview — needs at least 2 visits to look meaningful, so seed a second visit for demo purposes if needed
 10. **Share-with-provider export**: doctor-readable summary (scores + trend + treatments tried) generated from a visit or the full history
 11. **Polish pass**: disclaimer copy, clinic-name framing on login/onboarding, loading states (see §12), error messages
 

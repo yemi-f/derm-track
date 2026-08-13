@@ -10,7 +10,7 @@ A submission for the YouCam API Hackathon — a dermatology-clinic-provided web 
 
 - Next.js 14+, App Router, **plain JavaScript, no TypeScript**
 - Supabase: email + password auth *and* passwordless magic-link auth (no Google OAuth or other third-party provider), Postgres, Storage
-- Recharts for the visit-history line graph
+- Chart.js (via react-chartjs-2) for the visit-history line graph
 - react-easy-crop for the pre-upload crop step
 - Plain CSS with design tokens (see `IMPLEMENTATION.md` §7) — no CSS framework, no component library
 - Deploy target: Vercel

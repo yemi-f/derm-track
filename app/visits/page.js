@@ -13,14 +13,16 @@ const CONCERN_LABELS = Object.fromEntries(
 );
 
 // A few complementary muted tones from the design tokens, cycled per concern line —
-// not saturated chart-library defaults. See IMPLEMENTATION.md §8.2 / §7.
+// not saturated chart-library defaults. See IMPLEMENTATION.md §8.2 / §7. Literal hex
+// (not CSS var() strings) because these feed a canvas-rendered chart (Chart.js), which
+// doesn't reliably resolve CSS custom properties the way SVG/DOM styling does.
 const LINE_COLORS = [
-  "var(--color-primary)",
-  "var(--color-success)",
-  "var(--color-warning)",
-  "var(--color-accent)",
-  "var(--color-primary-dark)",
-  "var(--color-text-muted)",
+  "#D98C99", // --color-primary
+  "#8FA88A", // --color-success
+  "#D9A05B", // --color-warning
+  "#E8B4A0", // --color-accent
+  "#B96A78", // --color-primary-dark
+  "#8A7873", // --color-text-muted
 ];
 
 function formatDate(iso) {

@@ -1,84 +1,174 @@
 "use client";
 
+import { useCallback, useRef } from "react";
 import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
   Legend,
-} from "recharts";
+  Tooltip,
+} from "chart.js";
+import { Line } from "react-chartjs-2";
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Legend, Tooltip);
+
+// Literal hex, not CSS var() — see the matching comment in app/visits/page.js.
+const BORDER_COLOR = "#EFE0D7"; // --color-border
+const TEXT_MUTED_COLOR = "#8A7873"; // --color-text-muted
 
 export default function VisitTrendChart({ data, series }) {
-  return (
-    <ResponsiveContainer width="100%" aspect={1.618}>
-      <LineChart data={data} margin={{ top: 5, right: 0, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-        <XAxis dataKey="date" stroke="var(--color-text-muted)" />
-        <YAxis width="auto" domain={[0, 100]} stroke="var(--color-text-muted)" />
-        <Tooltip cursor={{ stroke: "var(--color-border)" }} content={<ImagePreviewTooltip />} />
-        <Legend wrapperStyle={{ fontSize: 13 }} />
-        {series.map((s) => (
-          <Line
-            key={s.id}
-            type="monotone"
-            dataKey={s.id}
-            name={s.label}
-            stroke={s.color}
-            dot={{ fill: "var(--color-surface)" }}
-            activeDot={{ r: 8, stroke: "var(--color-surface)" }}
-            connectNulls
-          />
-        ))}
-      </LineChart>
-    </ResponsiveContainer>
+  const tooltipRef = useRef(null);
+
+  const chartData = {
+    labels: data.map((d) => d.date),
+    datasets: series.map((s) => ({
+      label: s.label,
+      data: data.map((d) => (d[s.id] ?? null)),
+      borderColor: s.color,
+      backgroundColor: s.color,
+      pointBackgroundColor: "#ffffff",
+      pointBorderColor: s.color,
+      pointRadius: 4,
+      pointHoverRadius: 8,
+      spanGaps: true,
+      tension: 0.3,
+    })),
+  };
+
+  // Chart.js's canvas tooltip can't render arbitrary HTML (e.g. the visit photo), so we
+  // disable it and drive a plain positioned <div> ourselves via the documented "external"
+  // tooltip hook. See https://www.chartjs.org/docs/latest/configuration/tooltip.html#external-custom-tooltips
+  const externalTooltipHandler = useCallback(
+    ({ chart, tooltip }) => {
+      const el = tooltipRef.current;
+      if (!el) return;
+
+      if (tooltip.opacity === 0) {
+        el.style.opacity = 0;
+        return;
+      }
+
+      const dataIndex = tooltip.dataPoints?.[0]?.dataIndex;
+      const point = dataIndex != null ? data[dataIndex] : null;
+
+      el.replaceChildren();
+      if (point) {
+        if (point.imageUrl) {
+          const img = document.createElement("img");
+          img.src = point.imageUrl;
+          img.alt = `Visit on ${point.date}`;
+          Object.assign(img.style, thumbDom);
+          el.appendChild(img);
+        }
+
+        const info = document.createElement("div");
+        const dateEl = document.createElement("div");
+        Object.assign(dateEl.style, dateDom);
+        dateEl.textContent = point.date;
+        info.appendChild(dateEl);
+
+        for (const dp of tooltip.dataPoints) {
+          const row = document.createElement("div");
+          row.style.fontSize = "12px";
+          row.style.marginTop = "2px";
+
+          const concern = document.createElement("span");
+          concern.style.color = dp.dataset.borderColor;
+          concern.style.fontWeight = "600";
+          concern.textContent = dp.dataset.label;
+
+          const score = document.createElement("span");
+          score.style.color = "var(--color-text)";
+          score.textContent = `: ${dp.formattedValue}`;
+
+          row.appendChild(concern);
+          row.appendChild(score);
+          info.appendChild(row);
+        }
+        el.appendChild(info);
+      }
+
+      Object.assign(el.style, {
+        opacity: 1,
+        left: `${chart.canvas.offsetLeft + tooltip.caretX}px`,
+        top: `${chart.canvas.offsetTop + tooltip.caretY}px`,
+      });
+    },
+    [data]
   );
-}
 
-// Each chart row represents one visit — the photo is shared across every concern's
-// point at that date, so it's shown once, with every active line's score listed below.
-function ImagePreviewTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  const point = payload[0].payload;
+  const options = {
+    responsive: true,
+    maintainAspectRatio: true,
+    aspectRatio: 1.618,
+    interaction: { mode: "index", intersect: false },
+    scales: {
+      x: {
+        grid: { color: BORDER_COLOR },
+        ticks: { color: TEXT_MUTED_COLOR },
+      },
+      y: {
+        min: 0,
+        max: 100,
+        grid: { color: BORDER_COLOR },
+        ticks: { color: TEXT_MUTED_COLOR },
+      },
+    },
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: { boxWidth: 10, font: { size: 13 } },
+      },
+      tooltip: {
+        enabled: false,
+        external: externalTooltipHandler,
+      },
+    },
+  };
 
   return (
-    <div style={tooltip}>
-      {point.imageUrl && <img src={point.imageUrl} alt={`Visit on ${label}`} style={thumb} />}
-      <div>
-        <div style={dateStyle}>{label}</div>
-        {payload.map((entry) => (
-          <div key={entry.dataKey} style={{ color: entry.color, fontSize: 12 }}>
-            {entry.name}: {entry.value}
-          </div>
-        ))}
-      </div>
+    <div style={chartWrapper}>
+      <Line data={chartData} options={options} />
+      <div ref={tooltipRef} style={tooltip} />
     </div>
   );
 }
 
+const chartWrapper = {
+  position: "relative",
+};
+
 const tooltip = {
+  position: "absolute",
+  pointerEvents: "none",
+  transform: "translate(-50%, -110%)",
+  opacity: 0,
+  transition: "opacity 0.1s ease",
   background: "var(--color-surface)",
-  border: "1px solid var(--color-border)",
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: "var(--color-border)",
   borderRadius: "var(--radius)",
   boxShadow: "var(--shadow-soft)",
   padding: 12,
   display: "flex",
   gap: 10,
   alignItems: "flex-start",
+  whiteSpace: "nowrap",
 };
 
-const thumb = {
-  width: 48,
-  height: 48,
+const thumbDom = {
+  width: "48px",
+  height: "48px",
   objectFit: "cover",
-  borderRadius: 10,
-  flexShrink: 0,
+  borderRadius: "10px",
+  flexShrink: "0",
 };
 
-const dateStyle = {
-  fontSize: 12,
+const dateDom = {
+  fontSize: "12px",
   color: "var(--color-text-muted)",
-  marginBottom: 4,
+  marginBottom: "4px",
 };
