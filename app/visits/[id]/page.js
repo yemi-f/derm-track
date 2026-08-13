@@ -2,29 +2,18 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSignedUrl } from "@/lib/storage";
+import { latestByKey } from "@/lib/latestByKey";
 import ExpandableImage from "@/components/ExpandableImage";
 import VisitConcernExplorer from "@/components/VisitConcernExplorer";
 
 function formatDate(iso) {
-  return new Date(iso).toLocaleDateString(undefined, {
+  return new Date(iso).toLocaleString(undefined, {
     month: "long",
     day: "numeric",
     year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
-}
-
-// Keeps the latest row per key — treatment_selections/simulations have no uniqueness
-// constraint (a user can change their pick), so history is append-only.
-function latestByKey(rows, keyFn) {
-  const byKey = new Map();
-  for (const row of rows) {
-    const key = keyFn(row);
-    const existing = byKey.get(key);
-    if (!existing || new Date(row.created_at) > new Date(existing.created_at)) {
-      byKey.set(key, row);
-    }
-  }
-  return byKey;
 }
 
 export default async function VisitDetailPage({ params }) {
@@ -91,9 +80,14 @@ export default async function VisitDetailPage({ params }) {
 
   return (
     <main style={{ maxWidth: 1100, margin: "40px auto", padding: "0 24px" }}>
-      <Link href="/visits" style={backLink}>
-        ← Back to visits
-      </Link>
+      <div style={topLinks}>
+        <Link href="/visits" style={backLink}>
+          ← Back to visits
+        </Link>
+        <Link href={`/visits/${visit.id}/share`} style={backLink}>
+          Share with provider
+        </Link>
+      </div>
 
       <h1 style={{ marginBottom: 4 }}>{formatDate(visit.created_at)}</h1>
       {visit.notes && <p style={{ color: "var(--color-text-muted)" }}>{visit.notes}</p>}
@@ -111,9 +105,17 @@ export default async function VisitDetailPage({ params }) {
   );
 }
 
+const topLinks = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 16,
+  flexWrap: "wrap",
+  gap: 8,
+};
+
 const backLink = {
   display: "inline-block",
-  marginBottom: 16,
   fontSize: 13,
   color: "var(--color-primary-dark)",
   textDecoration: "none",

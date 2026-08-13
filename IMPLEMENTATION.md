@@ -173,8 +173,10 @@ app/
   login/page.js                  → sign in
   page.js                        → redirect to /visits if authed
   visits/page.js                 → visit history: list + line graph (home screen after login)
+  visits/share/page.js           → printable "share with provider" summary of the full history
   visits/new/page.js             → capture/upload flow → analysis → treatment → simulation
   visits/[id]/page.js            → view a single past visit's results
+  visits/[id]/share/page.js      → printable "share with provider" summary of that visit
   api/youcam/upload/route.js     → proxies YouCam File API
   api/youcam/analyze/route.js    → creates + polls skin-analysis task
   api/youcam/simulate/route.js   → creates + polls skin-simulation task

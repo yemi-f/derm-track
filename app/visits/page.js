@@ -29,6 +29,15 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+function formatDateTime(iso) {
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export default async function VisitsPage() {
   const supabase = await createClient();
   const {
@@ -82,7 +91,7 @@ export default async function VisitsPage() {
 
   const listItems = [...rows].reverse().map((visit) => ({
     id: visit.id,
-    date: formatDate(visit.created_at),
+    date: formatDateTime(visit.created_at),
     thumbnailUrl: thumbnailUrls[visit.id],
     concernCount: visit.concern_scores?.length || 0,
   }));
@@ -97,6 +106,11 @@ export default async function VisitsPage() {
           <h1 style={{ marginTop: 4, marginBottom: 0 }}>Your Visits</h1>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          {rows.length > 0 && (
+            <Link href="/visits/share" style={secondaryButtonLink}>
+              Share with provider
+            </Link>
+          )}
           <Link href="/visits/new" style={primaryButtonLink}>
             New Visit
           </Link>
@@ -163,6 +177,20 @@ const primaryButtonLink = {
   border: "none",
   background: "var(--color-primary)",
   color: "#fff",
+  fontSize: 14,
+  fontWeight: 600,
+  textDecoration: "none",
+};
+
+const secondaryButtonLink = {
+  display: "inline-block",
+  padding: "10px 16px",
+  borderRadius: 10,
+  borderWidth: 1,
+  borderStyle: "solid",
+  borderColor: "var(--color-border)",
+  background: "var(--color-surface)",
+  color: "var(--color-text)",
   fontSize: 14,
   fontWeight: 600,
   textDecoration: "none",

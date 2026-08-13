@@ -1,0 +1,194 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { latestByKey } from "@/lib/latestByKey";
+import PrintButton from "@/components/PrintButton";
+import concernConfig from "@/lib/concern-treatment-config.json";
+
+const clinicName = process.env.NEXT_PUBLIC_CLINIC_NAME || "Your Clinic";
+
+const CONCERN_LABELS = Object.fromEntries(
+  concernConfig.concerns.map((c) => [c.id, c.label])
+);
+const TREATMENT_LABELS = Object.fromEntries(
+  concernConfig.concerns.map((c) => [
+    c.id,
+    Object.fromEntries(c.treatments.map((t) => [t.id, t.label])),
+  ])
+);
+const CANONICAL_CONCERN_ORDER = concernConfig.concerns.map((c) => c.id);
+
+function formatDate(iso) {
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function formatDateTime(iso) {
+  return new Date(iso).toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export default async function VisitsSharePage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: visits, error } = await supabase
+    .from("visits")
+    .select(
+      `id, created_at,
+       concern_scores(concern_key, ui_score),
+       treatment_selections(concern_key, treatment_id, created_at)`
+    )
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error("[visits/share] failed to load visits:", error);
+  }
+
+  const rows = visits || [];
+
+  // Every concern ever tracked, in the app's canonical order — a doctor-readable
+  // record should show everything, not just what's chart-worthy (unlike the
+  // interactive trend chart, which hides concerns with < 2 points to avoid clutter).
+  const trackedConcernIds = new Set();
+  for (const visit of rows) {
+    for (const cs of visit.concern_scores || []) {
+      trackedConcernIds.add(cs.concern_key);
+    }
+  }
+  const concernIds = CANONICAL_CONCERN_ORDER.filter((id) => trackedConcernIds.has(id));
+
+  const allTreatmentSelections = rows.flatMap((v) => v.treatment_selections || []);
+  const latestTreatmentByConcern = latestByKey(allTreatmentSelections, (t) => t.concern_key);
+  const treatments = CANONICAL_CONCERN_ORDER.filter((id) => latestTreatmentByConcern.has(id)).map(
+    (id) => latestTreatmentByConcern.get(id)
+  );
+
+  return (
+    <main style={main}>
+      <div className="print-hide" style={topLinks}>
+        <Link href="/visits" style={backLink}>
+          ← Back to visits
+        </Link>
+        <PrintButton />
+      </div>
+
+      <p style={eyebrow}>{clinicName}</p>
+      <h1 style={{ marginTop: 4, marginBottom: 4 }}>Treatment History Summary</h1>
+      {rows.length > 0 && (
+        <p style={{ color: "var(--color-text-muted)", marginTop: 0 }}>
+          {formatDate(rows[0].created_at)} – {formatDate(rows[rows.length - 1].created_at)}
+        </p>
+      )}
+
+      <h2 style={sectionTitle}>Score Trend</h2>
+      {rows.length === 0 || concernIds.length === 0 ? (
+        <p style={{ color: "var(--color-text-muted)" }}>No visits recorded yet.</p>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table className="share-table">
+            <thead>
+              <tr>
+                <th>Visit</th>
+                {concernIds.map((id) => (
+                  <th key={id}>{CONCERN_LABELS[id] || id}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((visit) => {
+                const scoreByConcern = Object.fromEntries(
+                  (visit.concern_scores || []).map((cs) => [cs.concern_key, cs.ui_score])
+                );
+                return (
+                  <tr key={visit.id}>
+                    <td>{formatDateTime(visit.created_at)}</td>
+                    {concernIds.map((id) => (
+                      <td key={id}>{scoreByConcern[id] != null ? scoreByConcern[id] : "—"}</td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2 style={sectionTitle}>Treatments Tried</h2>
+      {treatments.length === 0 ? (
+        <p style={{ color: "var(--color-text-muted)" }}>No treatments selected yet.</p>
+      ) : (
+        <table className="share-table">
+          <thead>
+            <tr>
+              <th>Concern</th>
+              <th>Most Recent Treatment</th>
+            </tr>
+          </thead>
+          <tbody>
+            {treatments.map((t) => (
+              <tr key={t.concern_key}>
+                <td>{CONCERN_LABELS[t.concern_key] || t.concern_key}</td>
+                <td>{TREATMENT_LABELS[t.concern_key]?.[t.treatment_id] || t.treatment_id}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <p style={footnote}>
+        Generated by the {clinicName} Skin Journey app for your provider&rsquo;s reference. Not a
+        diagnosis — treatments shown are options your provider may recommend.
+      </p>
+    </main>
+  );
+}
+
+const main = {
+  maxWidth: 900,
+  margin: "40px auto",
+  padding: "0 24px",
+};
+
+const topLinks = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 24,
+  flexWrap: "wrap",
+  gap: 8,
+};
+
+const backLink = {
+  fontSize: 13,
+  color: "var(--color-primary-dark)",
+  textDecoration: "none",
+};
+
+const eyebrow = {
+  color: "var(--color-text-muted)",
+  fontSize: 13,
+  margin: 0,
+};
+
+const sectionTitle = {
+  fontSize: 16,
+  marginTop: 32,
+  marginBottom: 12,
+};
+
+const footnote = {
+  marginTop: 32,
+  fontSize: 12,
+  color: "var(--color-text-muted)",
+};

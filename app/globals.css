@@ -63,3 +63,31 @@ input {
     position: static;
   }
 }
+
+@media print {
+  .print-hide {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+  }
+}
+
+.share-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.share-table th,
+.share-table td {
+  border: 1px solid var(--color-border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.share-table th {
+  background: var(--color-bg);
+  font-weight: 600;
+}
