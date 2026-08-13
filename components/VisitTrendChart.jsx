@@ -110,7 +110,6 @@ export default function VisitTrendChart({ data, series }) {
         ticks: { color: TEXT_MUTED_COLOR },
       },
       y: {
-        min: 0,
         max: 100,
         grid: { color: BORDER_COLOR },
         ticks: { color: TEXT_MUTED_COLOR },
