@@ -81,7 +81,7 @@ export default function VisitTrendChart({ data, series }) {
 
           const score = document.createElement("span");
           score.style.color = "var(--color-text)";
-          score.textContent = `: ${dp.formattedValue}`;
+          score.textContent = `: ${dp.formattedValue}/100`;
 
           row.appendChild(concern);
           row.appendChild(score);
@@ -103,7 +103,7 @@ export default function VisitTrendChart({ data, series }) {
     responsive: true,
     maintainAspectRatio: true,
     aspectRatio: 1.618,
-    interaction: { mode: "index", intersect: false },
+    interaction: { mode: "nearest", intersect: false },
     scales: {
       x: {
         grid: { color: BORDER_COLOR },
