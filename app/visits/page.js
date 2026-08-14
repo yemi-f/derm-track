@@ -5,7 +5,7 @@ import { getSignedUrl } from "@/lib/storage";
 import VisitTrendChart from "@/components/VisitTrendChart";
 import concernConfig from "@/lib/concern-treatment-config.json";
 import { primaryButtonColors, secondaryButtonColors } from "@/lib/buttonStyles";
-import SignOutButton from "./SignOutButton";
+import UserMenu from "@/components/UserMenu";
 
 const clinicName = process.env.NEXT_PUBLIC_CLINIC_NAME || "Your Clinic";
 
@@ -117,7 +117,7 @@ export default async function VisitsPage() {
               </Link>
             </>
           )}
-          <SignOutButton />
+          <UserMenu email={user.email} />
         </div>
       </div>
 
