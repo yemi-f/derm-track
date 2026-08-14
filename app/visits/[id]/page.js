@@ -5,6 +5,7 @@ import { getSignedUrl } from "@/lib/storage";
 import { latestByKey } from "@/lib/latestByKey";
 import ExpandableImage from "@/components/ExpandableImage";
 import VisitConcernExplorer from "@/components/VisitConcernExplorer";
+import UserMenu from "@/components/UserMenu";
 
 function formatDate(iso) {
   return new Date(iso).toLocaleString(undefined, {
@@ -84,9 +85,12 @@ export default async function VisitDetailPage({ params }) {
         <Link href="/visits" style={backLink}>
           ← Back to visits
         </Link>
-        <Link href={`/visits/${visit.id}/share`} style={backLink}>
-          Share with provider
-        </Link>
+        <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+          <Link href={`/visits/${visit.id}/share`} style={backLink}>
+            Share with provider
+          </Link>
+          <UserMenu email={user.email} />
+        </div>
       </div>
 
       <h1 style={{ marginBottom: 4 }}>{formatDate(visit.created_at)}</h1>
