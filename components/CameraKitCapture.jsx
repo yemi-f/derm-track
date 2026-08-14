@@ -125,7 +125,17 @@ export default function CameraKitCapture({ onCaptured }) {
       );
     });
 
-    listenerIdsRef.current.push(capturedId, failedId);
+    // Fired when the user exits the Camera Kit's own UI without capturing or
+    // erroring — without this, there's no path back to "ready" and the page
+    // goes blank (no camera view, no Start Camera button).
+    const closedId = window.YMK.addEventListener("closed", () => {
+      listenerIdsRef.current.forEach((id) => window.YMK?.removeEventListener(id));
+      listenerIdsRef.current = [];
+      openedRef.current = false;
+      setStatus((current) => (current === "error" ? current : "ready"));
+    });
+
+    listenerIdsRef.current.push(capturedId, failedId, closedId);
 
     window.YMK.openCameraKit();
     openedRef.current = true;
