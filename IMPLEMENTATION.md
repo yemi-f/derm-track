@@ -1,4 +1,4 @@
-# Skin Journey — Implementation Doc
+# DermTrack — Implementation Doc
 
 **For: Claude Code**
 **Context:** YouCam API Hackathon (devpost.com/youcam-api). See CLAUDE.md for build-order and prompting conventions.
