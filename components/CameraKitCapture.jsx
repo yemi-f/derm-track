@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { primaryButtonColors } from "@/lib/buttonStyles";
 
 const SDK_URL = "https://plugins-media.makeupar.com/v2.5-camera-kit/sdk.js";
 const SCRIPT_ID = "ymk-camera-kit-sdk";
@@ -165,8 +166,7 @@ const primaryButton = {
   padding: "12px 20px",
   borderRadius: 10,
   border: "none",
-  background: "var(--color-primary)",
-  color: "#fff",
+  ...primaryButtonColors,
   fontSize: 15,
   fontWeight: 600,
   cursor: "pointer",

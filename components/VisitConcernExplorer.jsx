@@ -6,6 +6,7 @@ import ConcernScoreCard from "./ConcernScoreCard";
 import TreatmentSelector from "./TreatmentSelector";
 import SimulationComparison from "./SimulationComparison";
 import concernConfig from "@/lib/concern-treatment-config.json";
+import { primaryButtonColors } from "@/lib/buttonStyles";
 
 const CONCERN_LABELS = Object.fromEntries(
   concernConfig.concerns.map((c) => [c.id, c.label])
@@ -192,8 +193,7 @@ const primaryButton = {
   padding: "12px 20px",
   borderRadius: 10,
   border: "none",
-  background: "var(--color-primary)",
-  color: "#fff",
+  ...primaryButtonColors,
   fontSize: 15,
   fontWeight: 600,
   cursor: "pointer",

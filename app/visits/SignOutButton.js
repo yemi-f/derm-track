@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { secondaryButtonColors } from "@/lib/buttonStyles";
 
 export default function SignOutButton() {
   const router = useRouter();
@@ -19,9 +20,7 @@ export default function SignOutButton() {
       style={{
         padding: "10px 16px",
         borderRadius: 10,
-        border: "1px solid var(--color-border)",
-        background: "var(--color-surface)",
-        color: "var(--color-text)",
+        ...secondaryButtonColors,
         fontSize: 14,
         cursor: "pointer",
       }}

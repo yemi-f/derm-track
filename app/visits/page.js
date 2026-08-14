@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSignedUrl } from "@/lib/storage";
 import VisitTrendChart from "@/components/VisitTrendChart";
 import concernConfig from "@/lib/concern-treatment-config.json";
+import { primaryButtonColors, secondaryButtonColors } from "@/lib/buttonStyles";
 import SignOutButton from "./SignOutButton";
 
 const clinicName = process.env.NEXT_PUBLIC_CLINIC_NAME || "Your Clinic";
@@ -107,21 +108,28 @@ export default async function VisitsPage() {
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {rows.length > 0 && (
-            <Link href="/visits/share" style={secondaryButtonLink}>
-              Share with provider
-            </Link>
+            <>
+              <Link href="/visits/share" style={secondaryButtonLink}>
+                Share with provider
+              </Link>
+              <Link href="/visits/new" style={primaryButtonLink}>
+                New Visit
+              </Link>
+            </>
           )}
-          <Link href="/visits/new" style={primaryButtonLink}>
-            New Visit
-          </Link>
           <SignOutButton />
         </div>
       </div>
 
       {rows.length === 0 && (
-        <p style={{ color: "var(--color-text-muted)" }}>
-          No visits yet. Start your first one to begin tracking progress over time.
-        </p>
+        <div>
+          <p style={{ color: "var(--color-text-muted)" }}>
+            No visits yet. Start your first one to begin tracking progress over time.
+          </p>
+          <Link href="/visits/new" style={{ ...primaryButtonLink, marginTop: 4 }}>
+            New Visit
+          </Link>
+        </div>
       )}
 
       {series.length > 0 && (
@@ -175,8 +183,7 @@ const primaryButtonLink = {
   padding: "10px 16px",
   borderRadius: 10,
   border: "none",
-  background: "var(--color-primary)",
-  color: "#fff",
+  ...primaryButtonColors,
   fontSize: 14,
   fontWeight: 600,
   textDecoration: "none",
@@ -186,13 +193,8 @@ const secondaryButtonLink = {
   display: "inline-block",
   padding: "10px 16px",
   borderRadius: 10,
-  borderWidth: 1,
-  borderStyle: "solid",
-  borderColor: "var(--color-border)",
-  background: "var(--color-surface)",
-  color: "var(--color-text)",
+  ...secondaryButtonColors,
   fontSize: 14,
-  fontWeight: 600,
   textDecoration: "none",
 };
 

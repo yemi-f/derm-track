@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Cropper from "react-easy-crop";
 import { resizeIfNeeded, canvasToBlob } from "@/lib/imageValidation";
+import { primaryButtonColors, secondaryButtonColors } from "@/lib/buttonStyles";
 
 export default function CropStep({ imageBlob, onConfirm, onRetake }) {
   // Object URL is created *inside* the effect, paired 1:1 with its own revoke — creating
@@ -115,8 +116,7 @@ const primaryButton = {
   padding: "12px 16px",
   borderRadius: 10,
   border: "none",
-  background: "var(--color-primary)",
-  color: "#fff",
+  ...primaryButtonColors,
   fontSize: 15,
   fontWeight: 600,
   cursor: "pointer",
@@ -126,9 +126,7 @@ const secondaryButton = {
   flex: 1,
   padding: "12px 16px",
   borderRadius: 10,
-  border: "1px solid var(--color-border)",
-  background: "var(--color-surface)",
-  color: "var(--color-text)",
+  ...secondaryButtonColors,
   fontSize: 15,
   cursor: "pointer",
 };

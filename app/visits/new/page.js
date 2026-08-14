@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { validateMinDimensions } from "@/lib/imageValidation";
+import { primaryButtonColors } from "@/lib/buttonStyles";
 import CameraKitCapture from "@/components/CameraKitCapture";
 import CropStep from "@/components/CropStep";
 
@@ -136,8 +137,7 @@ const primaryButton = {
   padding: "12px 20px",
   borderRadius: 10,
   border: "none",
-  background: "var(--color-primary)",
-  color: "#fff",
+  ...primaryButtonColors,
   fontSize: 15,
   fontWeight: 600,
   cursor: "pointer",

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { primaryButtonColors } from "@/lib/buttonStyles";
 
 const clinicName = process.env.NEXT_PUBLIC_CLINIC_NAME || "Your Clinic";
 
@@ -241,8 +242,7 @@ const styles = {
     padding: "12px 16px",
     borderRadius: 10,
     border: "none",
-    background: "var(--color-primary)",
-    color: "#fff",
+    ...primaryButtonColors,
     fontSize: 15,
     fontWeight: 600,
     cursor: "pointer",
