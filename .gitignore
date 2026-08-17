@@ -23,3 +23,7 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# devpost
+video-script.md
+video-voiceover.md

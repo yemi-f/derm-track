@@ -111,6 +111,10 @@ export default function CameraKitCapture({ onCaptured }) {
     const capturedId = window.YMK.addEventListener("faceDetectionCaptured", (result) => {
       const first = result.images?.[0];
       if (first) {
+        listenerIdsRef.current.forEach((id) => window.YMK?.removeEventListener(id));
+        listenerIdsRef.current = [];
+        window.YMK?.close();
+        openedRef.current = false;
         onCaptured(first.image, { width: first.width, height: first.height });
       }
     });

@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/client";
 import { validateMinDimensions } from "@/lib/imageValidation";
 import { primaryButtonColors } from "@/lib/buttonStyles";
 import CameraKitCapture from "@/components/CameraKitCapture";
-import CropStep from "@/components/CropStep";
 
 const ANALYZING_MESSAGES = [
   "Calling Skin Analysis…",
@@ -17,9 +16,8 @@ const ANALYZING_MESSAGES = [
 
 export default function NewVisitFlow() {
   const router = useRouter();
-  const [step, setStep] = useState("capture"); // capture | crop | uploading | analyzing | error
+  const [step, setStep] = useState("capture"); // capture | uploading | analyzing | error
   const [captureError, setCaptureError] = useState(null);
-  const [capturedBlob, setCapturedBlob] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [statusIndex, setStatusIndex] = useState(0);
 
@@ -35,23 +33,17 @@ export default function NewVisitFlow() {
     return () => clearInterval(interval);
   }, [step]);
 
-  function handleCaptured(blob, dimensions) {
+  function handleRetake() {
+    setStep("capture");
+  }
+
+  async function handleCaptured(blob, dimensions) {
     const check = validateMinDimensions(dimensions, "SD");
     if (!check.valid) {
       setCaptureError(check.message);
       return;
     }
     setCaptureError(null);
-    setCapturedBlob(blob);
-    setStep("crop");
-  }
-
-  function handleRetake() {
-    setCapturedBlob(null);
-    setStep("capture");
-  }
-
-  async function handleCropConfirm(finalBlob) {
     setStep("uploading");
     setErrorMessage(null);
 
@@ -66,7 +58,7 @@ export default function NewVisitFlow() {
       const imagePath = `visits/${user.id}/${tempVisitIdRef.current}/original.jpg`;
       const { error: uploadError } = await supabase.storage
         .from("visit-images")
-        .upload(imagePath, finalBlob, { contentType: "image/jpeg", upsert: true });
+        .upload(imagePath, blob, { contentType: "image/jpeg", upsert: true });
 
       if (uploadError) throw uploadError;
 
@@ -98,10 +90,6 @@ export default function NewVisitFlow() {
           {captureError && <p style={{ color: "#a13a34" }}>{captureError}</p>}
           <CameraKitCapture onCaptured={handleCaptured} />
         </div>
-      )}
-
-      {step === "crop" && capturedBlob && (
-        <CropStep imageBlob={capturedBlob} onConfirm={handleCropConfirm} onRetake={handleRetake} />
       )}
 
       {step === "uploading" && <LoadingState text="Uploading your photo…" />}

@@ -11,7 +11,6 @@ A submission for the YouCam API Hackathon — a dermatology-clinic-provided web 
 - Next.js 14+, App Router, **plain JavaScript, no TypeScript**
 - Supabase: email + password auth *and* passwordless magic-link auth (no Google OAuth or other third-party provider), Postgres, Storage
 - Chart.js (via react-chartjs-2) for the visit-history line graph
-- react-easy-crop for the pre-upload crop step
 - Plain CSS with design tokens (see `IMPLEMENTATION.md` §7) — no CSS framework, no component library
 - Deploy target: Vercel
 
@@ -25,8 +24,8 @@ Don't introduce TypeScript, Google OAuth or any other auth provider, a different
 4. **Analysis and Simulation use different concern-key vocabularies.** Always go through `lib/concernKeyMap.js` — never hardcode a concern string in more than one place. See `IMPLEMENTATION.md` §9.3 for the full confirmed mapping (e.g. `eye_bag` in Analysis is `eye_bags` in Simulation).
 5. **Row Level Security must be on** for `visits`, `concern_scores`, `treatment_selections`, `simulations` — scoped to `auth.uid()`. Combined with the private bucket, this is the actual privacy boundary for a health-adjacent app; don't ship either half without the other.
 6. **SD tier only**, all 10 concerns from `lib/concern-treatment-config.json`. Don't mix HD and SD `dst_actions` — the API rejects it outright.
-7. **Validate image dimensions before upload, not after a failed API call.** Min short side 480px (SD) is a hard reject; anything else routes through the crop/resize step. See `IMPLEMENTATION.md` §8.1.
-8. **Use YouCam's JS Camera Kit for capture, not a plain file input.** It gives guided, in-browser capture with live face-quality feedback (lighting, pose, framing) before the shot is even taken. See the SDK reference in the YouCam API docs (`skincare` detection mode). Upload flow (crop/resize/validate, §8.1) still applies to whatever image comes out of it.
+7. **Validate image dimensions before upload, not after a failed API call.** Min short side 480px (SD) is a hard reject. See `IMPLEMENTATION.md` §8.1.
+8. **Use YouCam's JS Camera Kit for capture, not a plain file input, and not a manual crop step.** Camera Kit (`skincare` mode, `qualityLevel: "moderate"`) already enforces live face-framing/lighting/pose quality gates before a capture can complete — `moderate`'s face-ratio minimum is stricter than the Analysis/Simulation API's own 60%-of-width requirement, so a separate crop-to-reframe step is redundant. Dimension validation (§8.1) still runs on the captured blob as a defense-in-depth check, not as the primary framing guarantee.
 
 ## In scope, not deferred
 
@@ -34,7 +33,7 @@ Don't introduce TypeScript, Google OAuth or any other auth provider, a different
 
 ## Build order
 
-Follow the milestone order in `IMPLEMENTATION.md` §11. Group related milestones into single prompts where they naturally belong together (e.g. capture + crop + analysis as one pass) rather than stopping after every small step. Use plan mode before larger prompts and review the plan before approving — cheap insurance against a wrong assumption compounding across a lot of generated code. Still worth pausing to manually verify at the genuine checkpoints: auth working end-to-end, first successful YouCam API call, first successful re-hosted image.
+Follow the milestone order in `IMPLEMENTATION.md` §11. Group related milestones into single prompts where they naturally belong together (e.g. capture + analysis as one pass) rather than stopping after every small step. Use plan mode before larger prompts and review the plan before approving — cheap insurance against a wrong assumption compounding across a lot of generated code. Still worth pausing to manually verify at the genuine checkpoints: auth working end-to-end, first successful YouCam API call, first successful re-hosted image.
 
 ## Conventions
 

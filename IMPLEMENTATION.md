@@ -27,7 +27,6 @@ Framing: **"[Clinic Name] gave you this app to track your treatment journey."** 
 | Framework | **Next.js 14+, App Router, JavaScript (no TS)** | API routes = built-in backend, file routing = fast to scaffold |
 | Auth + DB + Storage | **Supabase** | Email + password *and* passwordless magic-link auth, Postgres, file storage, all in one client |
 | Charting | **Chart.js**, via **react-chartjs-2** | Canvas-based line graph for score trends; switched from Recharts after its tooltips proved unreliable — custom HTML tooltips (needed for the visit-photo preview) are driven via Chart.js's documented `external` tooltip hook |
-| Image cropping | **react-easy-crop** | Lightweight drag/zoom crop UI, avoids repeated upload failures on dimension errors |
 | Styling | Plain CSS / CSS modules with a small design-token file | Keeps things simple and consistent without pulling in a UI framework |
 | Deployment | **Vercel** | Zero-config Next.js deploy, works with Supabase out of the box |
 
@@ -185,24 +184,16 @@ app/
 
 ### 8.1 `visits/new` — the core flow, one page with steps (not separate routes, to keep state simple)
 
-**Step A — Capture, crop & validate**
+**Step A — Capture & validate**
 
-Don't let a bad photo reach the API and fail — validate and let the user fix framing *before* it's submitted. This is worth the extra build time; a failed API call after a slow upload is a bad demo moment.
+Capture goes entirely through YouCam's JS Camera Kit (`faceDetectionMode: "skincare"`, `qualityLevel: "moderate"`) — no manual crop step. Camera Kit's own live quality gate already enforces what a crop step would otherwise exist to fix: `moderate`'s `face_ratio_lower_threshold` (0.65) is stricter than the Analysis/Simulation API's own 60%-of-width minimum, so a capture can't complete unless the face is already framed correctly. Captured resolution defaults to `videoQuality: "720p"` (1280×720), comfortably above the SD short-side floor (480px) — no manual resize needed either.
 
-1. File input (`<input type="file" accept="image/*" capture="user">` covers both "upload" and "take photo" on mobile in one control — simplest implementation, don't build a custom camera UI unless time allows)
-2. On file select, read natural dimensions client-side (`Image()` + `naturalWidth/naturalHeight`, or `createImageBitmap`)
-3. **Hard reject** (no crop can fix this) if the short side is below the SD minimum (480px) — show: "This photo is too low-resolution. Try a clearer, closer shot." Don't even open the cropper.
-4. **Open the crop UI** (`react-easy-crop`) for anything that passes the minimum check. Let the user drag/zoom to frame their face — this is also where you solve the "face must be 60–80% of image width" requirement, since the crop tool naturally lets them zoom in on their own face rather than relying on their original framing.
-5. **On crop confirm, resize down client-side via `<canvas>`** if the cropped result's long side exceeds 4096px (or proactively cap at 2560px, since the API auto-resizes anything larger than that anyway — no benefit to sending bigger). Use `canvas.toBlob()` to export the final JPEG/PNG for upload.
-6. Reject non-jpg/jpeg/png at file-select time; warn (not hard-block, since crop shrinks it) if original file > 10MB.
+1. `CameraKitCapture` opens the SDK's guided camera UI (live lighting/pose/framing feedback) and emits a blob via the `faceDetectionCaptured` event.
+2. On capture, validate the reported dimensions client-side against the SD minimum (`validateMinDimensions`) — a defense-in-depth check, not the primary framing guarantee (that's Camera Kit's job). **Hard reject** if the short side is below 480px: "This photo is too low-resolution. Try a clearer, closer shot."
+3. On success, upload the blob directly to Supabase Storage (private bucket) — Camera Kit's output is JPEG, so `contentType: "image/jpeg"` on upload is correct.
 
 ```js
 // lib/imageValidation.js
-export async function getImageDimensions(file) {
-  const bitmap = await createImageBitmap(file);
-  return { width: bitmap.width, height: bitmap.height };
-}
-
 export function validateMinDimensions({ width, height }, tier = "SD") {
   const minShortSide = tier === "HD" ? 1080 : 480;
   const shortSide = Math.min(width, height);
@@ -211,21 +202,9 @@ export function validateMinDimensions({ width, height }, tier = "SD") {
   }
   return { valid: true };
 }
-
-// After crop, before upload: resize via canvas if long side > 2560
-export function resizeIfNeeded(canvas, maxLongSide = 2560) {
-  const longSide = Math.max(canvas.width, canvas.height);
-  if (longSide <= maxLongSide) return canvas;
-  const scale = maxLongSide / longSide;
-  const resized = document.createElement("canvas");
-  resized.width = canvas.width * scale;
-  resized.height = canvas.height * scale;
-  resized.getContext("2d").drawImage(canvas, 0, 0, resized.width, resized.height);
-  return resized;
-}
 ```
 
-Flow order: select file → check min dimensions (hard reject if too small) → crop UI → resize-down on export if needed → upload the final blob to Supabase Storage → proceed to analysis.
+Flow order: Camera Kit capture → check min dimensions (hard reject if too small) → upload the blob to Supabase Storage → proceed to analysis.
 
 **Step B — Analysis (loading state, then results)**
 - On submit: upload to Supabase Storage (private bucket) first, storing the resulting *path*; generate a short-lived signed URL from that path server-side, then call `/api/youcam/analyze` with that signed URL as `src_file_url` and our 10 `dst_actions` (see §9)
@@ -544,10 +523,10 @@ Already scoped to the 10 simulation-eligible concerns. Drop this in as `lib/conc
 
 ## 11. Build order
 
-1. **Scaffold**: `create-next-app` (JS, App Router, no TS), install `@supabase/supabase-js`, `@supabase/ssr`, `chart.js`, `react-chartjs-2`, `react-easy-crop`
+1. **Scaffold**: `create-next-app` (JS, App Router, no TS), install `@supabase/supabase-js`, `@supabase/ssr`, `chart.js`, `react-chartjs-2`
 2. **Supabase project**: create tables (§5), enable RLS, create a **private** `visit-images` storage bucket with `allowedMimeTypes` restricted to `['image/jpeg', 'image/png']` and `fileSizeLimit` set to 10MB (do not make it public — see §4), enable email/password auth and email OTP (magic link) auth
 3. **Auth**: login page with email + password (sign-in and sign-up) plus a magic-link alternative, callback route, middleware guard — confirm you can sign in both ways and land on a protected page
-4. **Capture → crop/validate → Analysis loop**: YouCam JS Camera Kit capture (or upload fallback) → dimension check → crop UI → resize-down → upload to storage → call `/api/youcam/analyze` (confirmed working via Playground first) → render scores. This is the spine of the whole demo — get it working end-to-end before moving on.
+4. **Capture → validate → Analysis loop**: YouCam JS Camera Kit capture → dimension check → upload to storage → call `/api/youcam/analyze` (confirmed working via Playground first) → render scores. This is the spine of the whole demo — get it working end-to-end before moving on.
 5. **Treatment selection UI**: concern card → expand → pick a treatment → save selection
 6. **Simulation**: `concernKeyMap.js` is fully confirmed (§9.3) — wire `/api/youcam/simulate` directly, render 3-way comparison
 7. **Save visit + visit list**: write to `visits`, show reverse-chron list on `/visits`
